@@ -1,0 +1,83 @@
+场景如下：
+
+[root@localhost ~]# df -h 
+Filesystem            容量  已用 可用 已用% 挂载点
+/dev/sda2              28G   26G  585M  98% /
+/dev/sda1             190M   12M  169M   7% /boot
+none                  2.0G     0  2.0G   0% /dev/shm
+/dev/sdb3              99G   93M   94G   1% /u02
+
+根目录满了，
+/u02相对来说还有更大的空间，
+现在要把根目录占用空间大的datafile，迁移到空间大的/u02上去
+
+
+步骤如下：
+1.  把数据文件迁移到/u02对应的目录
+[oracle@localhost hsbop]$ mv /u01/app/oracle/oradata/orcl/acptdat.dbf  /u02/oradata/hsbop/acptdat.dbf
+[oracle@localhost hsbop]$ mv /u01/app/oracle/oradata/orcl/acptidx.dbf /u02/oradata/hsbop/acptidx.dbf
+[oracle@localhost hsbop]$ mv /u01/app/oracle/oradata/orcl/archdat.dbf /u02/oradata/hsbop/archdat.dbf
+[oracle@localhost hsbop]$ mv /u01/app/oracle/oradata/orcl/archidx.dbf /u02/oradata/hsbop/archidx.dbf
+
+2. 数据库启动到mount状态
+SQL> startup mount
+ORACLE instance started.
+
+Total System Global Area  536870912 bytes
+Fixed Size		    1220408 bytes
+Variable Size		  171966664 bytes
+Database Buffers	  356515840 bytes
+Redo Buffers		    7168000 bytes
+Database mounted.
+
+3. 进行数据文件的rename
+SQL> alter database rename file '/u01/app/oracle/oradata/orcl/acptdat.dbf' to '/u02/oradata/hsbop/acptdat.dbf';
+
+Database altered.
+
+SQL> alter database rename file '/u01/app/oracle/oradata/orcl/acptidx.dbf' to '/u02/oradata/hsbop/acptidx.dbf';
+
+Database altered.
+
+SQL> alter database rename file '/u01/app/oracle/oradata/orcl/archdat.dbf' to '/u02/oradata/hsbop/archdat.dbf';
+
+Database altered.
+
+SQL> alter database rename file '/u01/app/oracle/oradata/orcl/archidx.dbf' to '/u02/oradata/hsbop/archidx.dbf';
+
+Database altered.
+
+4. 打开数据库
+SQL> alter database open;
+
+Database altered.
+
+
+
+###### 如果mv的时候 xshell断开了，又重新mv了一下，会导致数据文件不完整，
+###### 测试环境可以玩一下，通过把数据文件构造到和控制文件记录的一致来骗过oracle，这个时候其实数据已经丢失了一部分
+
+
+SQL> alter database open;
+alter database open
+*
+ERROR at line 1:
+ORA-01122: database file 19 failed verification check
+ORA-01110: data file 19: '/u02/oradata/hsbop/ykhdat.dbf'
+ORA-01200: actual file size of 21087 is smaller than correct size of 64000
+blocks
+
+
+SQL> select 64000-21087 cnt from dual;
+
+       CNT
+----------
+     42913
+
+SQL> !dd if=/dev/zero of=/u02/oradata/hsbop/ykhdat.dbf bs=8192 count=42913 seek=21088
+42913+0 records in
+42913+0 records out
+
+SQL> alter database open;
+
+Database altered.
