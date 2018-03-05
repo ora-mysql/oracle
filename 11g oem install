@@ -1,0 +1,139 @@
+######################## step 1  删除现有em配置
+[oracle@dbseeker ~]$ emca -deconfig dbcontrol db -repos drop
+
+STARTED EMCA at Jan 14, 2018 1:11:04 PM
+EM Configuration Assistant, Version 11.2.0.3.0 Production
+Copyright (c) 2003, 2011, Oracle.  All rights reserved.
+
+Enter the following information:
+Database SID: ora11g
+Listener port number: 1521
+Password for SYS user:  
+Password for SYSMAN user:  
+
+----------------------------------------------------------------------
+WARNING : While repository is dropped the database will be put in quiesce mode.
+----------------------------------------------------------------------
+Do you wish to continue? [yes(Y)/no(N)]: y
+Jan 14, 2018 1:11:20 PM oracle.sysman.emcp.EMConfig perform
+INFO: This operation is being logged at /u01/app/oracle/cfgtoollogs/emca/ora11g/emca_2018_01_14_13_11_04.log.
+Jan 14, 2018 1:11:21 PM oracle.sysman.emcp.util.GeneralUtil initSQLEngineLoacly
+WARNING: ORA-01017: invalid username/password; logon denied
+
+Jan 14, 2018 1:11:21 PM oracle.sysman.emcp.ParamsManager checkListenerStatusForDBControl
+WARNING: Error initializing SQL connection. SQL operations cannot be performed
+Jan 14, 2018 1:11:21 PM oracle.sysman.emcp.EMDBPreConfig performDeconfiguration
+WARNING: EM is not configured for this database. No EM-specific actions can be performed. Some of the possible reasons may be: 
+ 1) EM is configured with different hostname then physical host. Set environment variable ORACLE_HOSTNAME=<hostname> and re-run EMCA script 
+ 2) ORACLE_HOSTNAME is set. Unset it and re-run EMCA script
+Jan 14, 2018 1:11:21 PM oracle.sysman.emcp.EMReposConfig invoke
+INFO: Dropping the EM repository (this may take a while) ...
+Jan 14, 2018 1:11:23 PM oracle.sysman.emcp.EMReposConfig invoke
+INFO: Repository successfully dropped
+Enterprise Manager configuration completed successfully
+FINISHED EMCA at Jan 14, 2018 1:11:23 PM
+
+######################## step 2 创建OEM GRID repository
+
+[oracle@dbseeker ~]$  emca -repos create
+STARTED EMCA at Jan 14, 2018 1:11:59 PM
+EM Configuration Assistant, Version 11.2.0.3.0 Production
+Copyright (c) 2003, 2011, Oracle.  All rights reserved.
+Enter the following information:
+Database SID: ora11g
+Listener port number: 1521
+Password for SYS user:  
+Password for SYSMAN user:  
+
+Do you wish to continue? [yes(Y)/no(N)]: y
+Jan 14, 2018 1:12:12 PM oracle.sysman.emcp.EMConfig perform
+INFO: This operation is being logged at /u01/app/oracle/cfgtoollogs/emca/ora11g/emca_2018_01_14_13_11_59.log.
+Jan 14, 2018 1:12:13 PM oracle.sysman.emcp.EMReposConfig createRepository
+INFO: Creating the EM repository (this may take a while) ...
+
+Jan 14, 2018 1:18:26 PM oracle.sysman.emcp.EMReposConfig invoke
+INFO: Repository successfully created
+Enterprise Manager configuration completed successfully
+FINISHED EMCA at Jan 14, 2018 1:18:27 PM
+[oracle@dbseeker ~]$ 
+
+
+######################## step 3 创建EM Grid control
+
+[oracle@dbseeker ~]$ emca -config dbcontrol db
+STARTED EMCA at Jan 14, 2018 1:18:44 PM
+EM Configuration Assistant, Version 11.2.0.3.0 Production
+Copyright (c) 2003, 2011, Oracle.  All rights reserved.
+
+Enter the following information:
+Database SID: ora11g
+Listener port number: 1521
+Listener ORACLE_HOME [ /u01/app/oracle/product/11.2.0/db ]: 
+Password for SYS user:  
+Password for DBSNMP user:  
+Password for SYSMAN user:  
+Email address for notifications (optional): 
+Outgoing Mail (SMTP) server for notifications (optional): 
+-----------------------------------------------------------------
+
+You have specified the following settings
+
+Database ORACLE_HOME ................ /u01/app/oracle/product/11.2.0/db
+
+Local hostname ................ dbseeker
+Listener ORACLE_HOME ................ /u01/app/oracle/product/11.2.0/db
+Listener port number ................ 1521
+Database SID ................ ora11g
+Email address for notifications ............... 
+Outgoing Mail (SMTP) server for notifications ............... 
+
+-----------------------------------------------------------------
+Do you wish to continue? [yes(Y)/no(N)]: yes
+Jan 14, 2018 1:19:08 PM oracle.sysman.emcp.EMConfig perform
+INFO: This operation is being logged at /u01/app/oracle/cfgtoollogs/emca/ora11g/emca_2018_01_14_13_18_43.log.
+Jan 14, 2018 1:19:15 PM oracle.sysman.emcp.EMReposConfig uploadConfigDataToRepository
+INFO: Uploading configuration data to EM repository (this may take a while) ...
+Jan 14, 2018 1:20:26 PM oracle.sysman.emcp.EMReposConfig invoke
+INFO: Uploaded configuration data successfully
+Jan 14, 2018 1:20:29 PM oracle.sysman.emcp.util.DBControlUtil secureDBConsole
+INFO: Securing Database Control (this may take a while) ...
+Jan 14, 2018 1:20:42 PM oracle.sysman.emcp.util.DBControlUtil secureDBConsole
+INFO: Database Control secured successfully.
+Jan 14, 2018 1:20:42 PM oracle.sysman.emcp.util.DBControlUtil startOMS
+INFO: Starting Database Control (this may take a while) ...
+Jan 14, 2018 1:22:03 PM oracle.sysman.emcp.EMDBPostConfig performConfiguration
+INFO: Database Control started successfully
+Jan 14, 2018 1:22:03 PM oracle.sysman.emcp.EMDBPostConfig performConfiguration
+INFO: >>>>>>>>>>> The Database Control URL is https://dbseeker:1158/em <<<<<<<<<<<
+Jan 14, 2018 1:22:17 PM oracle.sysman.emcp.EMDBPostConfig invoke
+WARNING: 
+************************  WARNING  ************************
+
+Management Repository has been placed in secure mode wherein Enterprise Manager data will be encrypted.  The encryption key has been placed in the file: /u01/app/oracle/product/11.2.0/db/dbseeker_ora11g/sysman/config/emkey.ora. Ensure this file is backed up as the encrypted data will become unusable if this file is lost. 
+
+***********************************************************
+Enterprise Manager configuration completed successfully
+FINISHED EMCA at Jan 14, 2018 1:22:17 PM
+[oracle@dbseeker ~]$ 
+
+
+
+######################## 起停操作
+[oracle@dbseeker ~]$ emctl stop dbconsole
+Oracle Enterprise Manager 11g Database Control Release 11.2.0.4.0 
+Copyright (c) 1996, 2013 Oracle Corporation.  All rights reserved.
+https://dbseeker:1158/em/console/aboutApplication
+Stopping Oracle Enterprise Manager 11g Database Control ... 
+ ...  Stopped. 
+[oracle@dbseeker ~]$ emctl start dbconsole
+Oracle Enterprise Manager 11g Database Control Release 11.2.0.4.0 
+Copyright (c) 1996, 2013 Oracle Corporation.  All rights reserved.
+https://dbseeker:1158/em/console/aboutApplication
+Starting Oracle Enterprise Manager 11g Database Control ................. started. 
+------------------------------------------------------------------
+Logs are generated in directory /u01/app/oracle/product/11.2.0/db/dbseeker_ora11g/sysman/log 
+[oracle@dbseeker ~]$ 
+
+######################## web访问
+
+虚拟机访问：注意关防火墙，配置/etc/hosts，NAT网络访问
