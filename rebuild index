@@ -1,0 +1,56 @@
+前几天一个客户朋友让我帮忙从一个库里面把建索引语句导出来，（但是不想把建索引参数加进去），
+达到的效果就是：生成的建index语句可以在另外一个库直接跑。
+
+原始语句：
+CREATE UNIQUE INDEX "dbseeker"."IDX_BUSINFLAG" ON "dbseeker"."BUSINFLAG" ("BUSINESS_FLAG")
+  PCTFREE 10 INITRANS 6 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 524288 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "dbseeker"
+
+目标语句：
+CREATE UNIQUE INDEX "dbseeker"."IDX_BUSINFLAG" ON "dbseeker"."BUSINFLAG" ("BUSINESS_FLAG") TABLESPACE "dbseeker";
+
+这个脚本生成其实不难，但是考虑到有十几个用户，有几千条建index语句，而且我们都知道create语句很长，xshell里查看需调整格式，用plsql查看略繁琐，这里做个记录， 应该能有更好的方法
+
+步骤记录：
+step 1： 最好把要执行的语句放入一个脚本里，这样做的好处就是，spool的结果里面不会显示select语句，以及其他多余的输出。
+
+vi generate.sql  
+
+set pagesize 0 
+set linesize 250 
+set trims on 
+set echo off 
+set heading off 
+set termout off 
+set feedback off
+spool /home/oracle/dbseeker/ddl.sql;
+set pagesize 0
+select  'select dbms_metadata.get_ddl(''INDEX'',''' || index_name || ''',''' || owner || ''') from dual;' from dba_indexes where owner='DBSEEKER';
+spool off;
+
+
+step2:  这一步产生create index/create unique index的完整语句，不过这里有一个问题，特别长的create 语句一行还是显示不下的，需要手动改一下，这里有待改进
+
+vi crt.sql
+
+set pagesize 0 
+set trims on 
+set echo off 
+set heading off 
+set termout off 
+set feedback off
+set linesize 1280
+set long 999999999
+spool /home/oracle/dbseeker/crt_statement.sql; 
+@/home/oracle/dbseeker/ddl.sql
+spool off;
+
+
+step 3:  去掉建索引的参数，在行末加上 tablespace 表空间名, 其中create_index.sql 就是我们需要的脚本
+
+grep "CREATE UNIQUE INDEX"  crt_statement.sql > do.sql
+grep "CREATE INDEX"  crt_statement.sql >> do.sql
+sed 's/$/& tablespace dbseeker;/g' do.sql > create_index.sql
