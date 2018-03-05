@@ -1,0 +1,44 @@
+OS: Red Hat Enterprise Linux Server release 6.8 (Santiago)
+DB: oracle 11.2.0.3，无PSU
+
+场景： 某客户大量应用用错误密码登录，导致用户locked，然后修改了密码，过了一会儿，发现数据库连接非常慢，sqlplus连接也异常慢，仿佛hang住一般，但是其他任何用户连接登录正常，就单单修改过密码，然后错误登录的用户hang住，而且这个用户的连接进程数只有50几个。
+
+后台等待如下：
+
+      2498 library cache lock						    WAITING
+      2576 library cache lock						    WAITING
+      2592 library cache lock						    WAITING
+      2663 library cache lock						    WAITING
+      2677 library cache lock						    WAITING
+      2682 library cache lock						    WAITING
+      2686 library cache lock						    WAITING
+      2763 library cache lock						    WAITING
+      2764 library cache lock						    WAITING
+      2783 library cache lock						    WAITING
+      2858 library cache lock						    WAITING
+
+
+本地测试：
+create user test identified by test;
+grant connect,resource to test;
+这时候用错误密码去连接数据库
+sqlplus test/t1  -- 迅速报错
+sqlplus test/t1  --较快报错
+...
+...
+sqlplus test/t1 --hang住
+
+可想而知，当实际场景高并发的连接后，hang住的效果会更加明显。
+
+Root Cause：
+11g新特性导致的问题，如果一个用户使用不正确的密码尝试登录数据库，那么随着登录失败次数的增加，每次登录验证前延迟等待的时间也会增加。
+
+
+Solution：
+通过设置28401事件来屏蔽密码延迟验证：
+alter system set event='28401 trace name context forever, level 1:10949 trace name context forever,level 1' scope=spfile sid='*';
+
+最后重启数据库，问题解决。
+
+参考文档：
+High 'library cache lock' Wait Time Due to Invalid Login Attempts (文档 ID 1309738.1)
