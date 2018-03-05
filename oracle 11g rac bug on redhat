@@ -1,0 +1,60 @@
+目前很多新购的机型已不支持redhat6了，但是应用仍然需要oracle11g rac， 
+某次实施时，遇到了3大bug，实施完成后做个记录，
+原因很明确，操作系统版本太高带来的问题，
+solution也很简单，其余过程完全没遇到问题，感觉强无敌。
+
+##################### 安装CRS的bug
+节点1跑第二个root脚本报错， /u01/grid/11.2.0/root.sh
+Adding Clusterware entries to inittab     
+ohasd failed to start
+Failed to start the Clusterware. Last 20 lines of the alert log follow:
+2017-12-19 00:04:19.409:
+[client(9660)]CRS-2101:The OLR was formatted using version 3.
+
+详见：Install of Clusterware fails while running root.sh on OL7 - ohasd fails to start (文档 ID 1959008.1)
+
+处理方案：
+vi  /etc/systemd/system/ohas.service
+[Unit]
+Description=Oracle High Availability Services
+After=syslog.target
+[Service]
+ExecStart=/etc/init.d/init.ohasd run >/dev/null 2>&1 Type=simple
+Restart=always
+[Install]
+WantedBy=multi-user.target
+
+systemctl daemon-reload
+systemctl enable ohas.service
+systemctl start ohas.service
+
+systemctl status ohas.service
+ll /etc/init.d/init.ohasd
+
+
+##################### 安装数据库软件的bug
+安装到56%的时候会抛出一个error
+
+详见：Installation walk-through - Oracle Grid/RAC 11.2.0.4 on Oracle Linux 7 (文档 ID 1951613.1)
+
+处理方案：
+vi$ORACLE_HOME/sysman/lib/ins_emagent.mk
+
+$(SYSMANBIN)emdctl:
+        $(MK_EMAGENT_NMECTL)  -lnnz11
+完成后点击Retry
+
+
+##################### 使用Opatch Auto的bug
+Can't locate Switch.pm in @INC (@INC contains: /usr/local/lib64/perl5 /usr/local/share/perl5 /usr/lib64/perl5/vendor_perl /usr/share/perl5/vendor_perl 
+/usr/lib64/perl5 /usr/share/perl5 .) at /u01/grid/11.2.0/OPatch/crs/auto_patch.pl line 2730.
+BEGIN failed--compilation aborted at /u01/grid/11.2.0/OPatch/crs/auto_patch.pl line 2730.
+
+详见： Opatch Auto fails with: Can't locate Switch.pm in @INC (文档 ID 1915430.1)
+
+处理方案：
+rpm -ivh perl-Switch-2.16-7.el7.noarch.rpm
+或者
+cp -p/u01/oracle/product/11.2.0/db/perl/lib/5.10.0/Switch.pm /usr/share/perl5/.
+
+
