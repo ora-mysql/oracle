@@ -1,0 +1,53 @@
+1. 本地连接： ps -ef|grep 'LOCAL=YES'
+
+2. 通过监听程序连接：ps -ef|grep 'LOCAL=NO'
+
+3.动态注册（监听建完默认就是动态，pmon进程每1分钟向监听注册一次）
+服务摘要..
+服务 "+ASM" 包含 1 个实例。
+  实例 "+ASM1", 状态 READY, 包含此服务的 1 个处理程序...
+服务 "rawdb" 包含 1 个实例。
+  实例 "rawdb1", 状态 READY, 包含此服务的 1 个处理程序...
+命令执行成功
+
+sqlnet.ora配置
+DIAG_ADR_ENABLED = OFF
+
+listener.ora配置
+DIAG_ADR_ENABLED_LISTENER = OFF
+
+4. 静态注册
+
+SID_LIST_LISTENER =
+  (SID_LIST =
+     (SID_DESC =
+      (GLOBAL_DBNAME = rawdb)
+      (ORACLE_HOME =/u01/grid/11.2.0)
+      (SID_NAME = rawdb1)
+    )
+  ) 
+
+服务摘要..
+服务 "+ASM" 包含 1 个实例。
+  实例 "+ASM1", 状态 READY, 包含此服务的 1 个处理程序...
+服务 "rawdb" 包含 2 个实例。
+  实例 "rawdb1", 状态 UNKNOWN, 包含此服务的 1 个处理程序...
+  实例 "rawdb1", 状态 READY, 包含此服务的 1 个处理程序...
+命令执行成功
+
+5. local_listener
+
+6.remote_listener
+
+7. DCD连接
+服务端配置 sqlnet.ora
+SQLNET.SEND_TIMEOUT=6000
+SQLNET.EXPIRE_TIME=1800
+SQLNET.OUTBOUND_CONNECT_TIMEOUT = 10
+SQLNET.INBOUND_CONNECT_TIMEOUT = 170
+INBOUND_CONNECT_TIMEOUT_LISTENER = 170
+
+
+客户端配置：
+SQLNET.SEND_TIMEOUT=6000
+SQLNET.EXPIRE_TIME=1800
